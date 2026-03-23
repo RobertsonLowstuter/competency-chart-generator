@@ -1,0 +1,52 @@
+body {
+  font-family: Arial;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  margin-bottom: 20px;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+}
+
+input {
+  width: 100%;
+}
+
+button {
+  padding: 8px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+svg {
+  width: 100%;
+  height: 700px;
+  border: 1px solid #ccc;
+}
+
+.range {
+  fill: #cfe8f3;
+}
+
+.self-dot {
+  fill: darkred;
+}
+
+.avg-dot {
+  fill: navy;
+}
+
+.label {
+  font-size: 12px;
+  text-anchor: end;
+}
+
+.nr {
+  font-size: 12px;
+}
