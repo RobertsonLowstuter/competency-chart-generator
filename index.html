@@ -27,7 +27,7 @@
     }
 
     .page {
-      max-width: 1560px;
+      max-width: 1320px;
       margin: 0 auto;
       padding: 24px 28px 40px;
     }
@@ -164,7 +164,7 @@
 
     #chart {
       width: 100%;
-      min-width: 1420px;
+      min-width: 1120px;
       display: block;
     }
 
@@ -209,6 +209,20 @@
     .empty-state {
       font-size: 16px;
       fill: #888;
+    }
+
+    .label-guide {
+      stroke-width: 1.25;
+      fill: none;
+      opacity: 0.9;
+    }
+
+    .label-guide-self {
+      stroke: var(--self);
+    }
+
+    .label-guide-avg {
+      stroke: var(--avg);
     }
   </style>
 </head>
@@ -259,8 +273,8 @@
     const starterData = [
       { label: "Technical Expertise in Role", self: "", avg: 6.9, min: 6, max: 10, nr: 1 },
       { label: "Strategic Capabilities", self: 3, avg: 6.4, min: 7, max: 10, nr: 2 },
-      { label: "Decision-Making Abilities", self: "", avg: 6.7, min: 7, max: 10, nr: 3 },
-      { label: "Innovation", self: 6, avg: 6.0, min: 6, max: 10, nr: 4 },
+      { label: "Decision-Making Abilities", self: 6.7, avg: 6.7, min: 7, max: 10, nr: 3 },
+      { label: "Innovation", self: 6.0, avg: 6.0, min: 6, max: 10, nr: 4 },
       { label: "Level of Executive Presence", self: 6.6, avg: 6.6, min: 5, max: 10, nr: 5 },
       { label: "Ability to Execute", self: 6, avg: 6.2, min: 5, max: 9, nr: 1 },
       { label: "Delegation", self: "", avg: 6.5, min: 5, max: 10, nr: 2 }
@@ -352,22 +366,6 @@
       }, "No chart data yet. Add rows or paste values, then click Generate Chart."));
     }
 
-    function resolvePositions(selfValue, avgValue, xScale) {
-      const selfExists = selfValue !== null;
-      const avgExists = avgValue !== null;
-
-      const result = {
-        selfX: selfExists ? xScale(selfValue) : null,
-        avgX: avgExists ? xScale(avgValue) : null,
-        selfDotY: 0,
-        avgDotY: 0,
-        selfLabelY: 0,
-        avgLabelY: 0
-      };
-
-      return result;
-    }
-
     function generateChart() {
       const rawData = getData();
 
@@ -391,13 +389,13 @@
       const svg = document.getElementById("chart");
       svg.innerHTML = "";
 
-      const width = 1480;
-      const margin = { top: 48, right: 150, bottom: 50, left: 360 };
-      const rowHeight = 54;
-      const plotHeight = Math.max(data.length * rowHeight, 140);
+      const width = 1180;
+      const margin = { top: 58, right: 120, bottom: 56, left: 360 };
+      const rowHeight = 74;
+      const plotHeight = Math.max(data.length * rowHeight, 160);
       const height = margin.top + plotHeight + margin.bottom;
 
-      const plotWidth = 700;
+      const plotWidth = 520;
       const chartLeft = margin.left;
       const chartRight = chartLeft + plotWidth;
 
@@ -421,7 +419,7 @@
 
         svg.appendChild(addSvgEl("line", {
           x1: x,
-          y1: margin.top - 10,
+          y1: margin.top - 18,
           x2: x,
           y2: margin.top + plotHeight,
           class: "grid-line"
@@ -429,7 +427,7 @@
 
         svg.appendChild(addSvgEl("text", {
           x,
-          y: margin.top + plotHeight + 24,
+          y: margin.top + plotHeight + 28,
           "text-anchor": "middle",
           class: "axis-label"
         }, String(i)));
@@ -437,16 +435,16 @@
 
       svg.appendChild(addSvgEl("text", {
         x: nrX,
-        y: margin.top - 18,
+        y: margin.top - 28,
         class: "column-header"
       }, "N/R"));
 
       svg.appendChild(addSvgEl("text", {
         x: deltaX,
-        y: margin.top - 18,
+        y: margin.top - 28,
         class: "column-header"
       }, "Δ"));
-      
+
       data.forEach((d, index) => {
         const y = margin.top + index * rowHeight + rowHeight / 2;
 
@@ -459,9 +457,9 @@
 
         svg.appendChild(addSvgEl("rect", {
           x: chartLeft,
-          y: y - 10,
+          y: y - 11,
           width: plotWidth,
-          height: 20,
+          height: 22,
           rx: 0,
           class: "baseline-bar"
         }));
@@ -469,9 +467,9 @@
         if (d.min !== null && d.max !== null) {
           svg.appendChild(addSvgEl("rect", {
             x: xScale(d.min),
-            y: y - 10,
+            y: y - 11,
             width: Math.max(xScale(d.max) - xScale(d.min), 0),
-            height: 20,
+            height: 22,
             rx: 0,
             class: "range-bar"
           }));
@@ -480,47 +478,65 @@
         const selfExists = d.self !== null;
         const avgExists = d.avg !== null;
 
-        let selfX = selfExists ? xScale(d.self) : null;
-        let avgX = avgExists ? xScale(d.avg) : null;
+        const selfX = selfExists ? xScale(d.self) : null;
+        const avgX = avgExists ? xScale(d.avg) : null;
 
-        let selfDotY = y + 8;
-        let avgDotY = y - 8;
+        let selfDotY = y;
+        let avgDotY = y;
 
-        let selfLabelY = y + 30;
-        let avgLabelY = y - 20;
+        let selfLabelY = y + 28;
+        let avgLabelY = y - 18;
+
+        let selfGuide = false;
+        let avgGuide = false;
 
         if (selfExists && !avgExists) {
-          selfDotY = y;
-          selfLabelY = y + 24;
+          selfLabelY = y + 26;
         }
 
         if (!selfExists && avgExists) {
-          avgDotY = y;
-          avgLabelY = y - 14;
+          avgLabelY = y - 16;
         }
 
         if (selfExists && avgExists) {
           const gap = Math.abs(selfX - avgX);
 
-          if (gap < 40) {
-            const push = (40 - gap) / 2 + 2;
-            if (selfX >= avgX) {
-              selfX += push;
-              avgX -= push;
-            } else {
-              selfX -= push;
-              avgX += push;
-            }
-          }
+          if (gap < 18) {
+            avgDotY = y - 6;
+            selfDotY = y + 6;
 
-          if (Math.abs(selfX - avgX) < 24) {
-            const extra = (24 - Math.abs(selfX - avgX)) / 2 + 2;
-            selfX += selfX >= avgX ? extra : -extra;
-            avgX += avgX > selfX ? extra : -extra;
-          }
+            avgLabelY = y - 26;
+            selfLabelY = y + 38;
 
-          selfX = Math.max(chartLeft + 8, Math.min(chartRight - 8, selfX));
-          avgX = Math.max(chartLeft + 8, Math.min(chartRight - 8, avgX));
+            avgGuide = true;
+            selfGuide = true;
+          } else if (gap < 34) {
+            avgLabelY = y - 24;
+            selfLabelY = y + 34;
+
+            avgGuide = true;
+            selfGuide = true;
+          }
+        }
+
+        if (avgExists && avgGuide) {
+          svg.appendChild(addSvgEl("line", {
+            x1: avgX,
+            y1: avgDotY - 8,
+            x2: avgX,
+            y2: avgLabelY + 4,
+            class: "label-guide label-guide-avg"
+          }));
+        }
+
+        if (selfExists && selfGuide) {
+          svg.appendChild(addSvgEl("line", {
+            x1: selfX,
+            y1: selfDotY + 8,
+            x2: selfX,
+            y2: selfLabelY - 16,
+            class: "label-guide label-guide-self"
+          }));
         }
 
         if (avgExists) {
