@@ -2,38 +2,485 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Competency Chart Generator</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --self: #7b2222;
+      --avg: #1f4e79;
+      --range: #cfe8f3;
+      --grid: #d7d7d7;
+      --text: #333;
+      --muted: #666;
+      --border: #cfcfcf;
+      --panel: #f8f8f8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background: #fff;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 28px 40px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    .note {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: 1px solid #999;
+      background: #f3f3f3;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #e9e9e9;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e5e5;
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--panel);
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .delete-btn {
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .legend {
+      display: inline-flex;
+      gap: 24px;
+      align-items: center;
+      border: 1px solid #7d8fa3;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      background: #fff;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.self {
+      background: var(--self);
+    }
+
+    .dot.avg {
+      background: var(--avg);
+    }
+
+    .range-box {
+      width: 22px;
+      height: 10px;
+      background: var(--range);
+      display: inline-block;
+    }
+
+    .chart-panel {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      overflow-x: auto;
+      background: #fff;
+    }
+
+    #chart {
+      width: 100%;
+      min-width: 1320px;
+      display: block;
+    }
+
+    .grid-line {
+      stroke: var(--grid);
+      stroke-width: 1;
+    }
+
+    .axis-label {
+      font-size: 12px;
+      fill: #666;
+    }
+
+    .row-label {
+      font-size: 14px;
+      fill: #444;
+    }
+
+    .range-bar {
+      fill: var(--range);
+    }
+
+    .self-dot {
+      fill: var(--self);
+    }
+
+    .avg-dot {
+      fill: var(--avg);
+    }
+
+    .self-label {
+      fill: var(--self);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .avg-label {
+      fill: var(--avg);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .nr-label,
+    .delta-label {
+      font-size: 13px;
+      fill: #333;
+    }
+
+    .delta-positive {
+      fill: var(--self);
+      font-weight: 700;
+    }
+
+    .delta-negative {
+      fill: var(--avg);
+      font-weight: 700;
+    }
+
+    .delta-neutral {
+      fill: #444;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
+  <main class="page">
+    <h1>Competency Chart Generator</h1>
+    <p class="note">N/R: Number of interviewees who did not respond with a rating.</p>
 
-  <h1>Competency Chart Generator</h1>
+    <section class="controls">
+      <button type="button" onclick="addRow()">Add Row</button>
+      <button type="button" onclick="generateChart()">Generate Chart</button>
+    </section>
 
-  <p>N/R: Number of interviewees who did not respond.</p>
+    <section class="table-wrap">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th style="width: 30%;">Category</th>
+            <th>Self</th>
+            <th>Average</th>
+            <th>Min</th>
+            <th>Max</th>
+            <th>N/R</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <div class="controls">
-    <button onclick="addRow()">Add Row</button>
-    <button onclick="generateChart()">Generate Chart</button>
-  </div>
+    <section class="legend">
+      <div class="legend-item"><span class="dot self"></span> Self Rating</div>
+      <div class="legend-item"><span class="dot avg"></span> Average Rating</div>
+      <div class="legend-item"><span class="range-box"></span> Range of Responses</div>
+    </section>
 
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>Category</th>
-        <th>Self</th>
-        <th>Average</th>
-        <th>Min</th>
-        <th>Max</th>
-        <th>N/R</th>
-        <th>Delete</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <section class="chart-panel">
+      <svg id="chart"></svg>
+    </section>
+  </main>
 
-  <svg id="chart"></svg>
+  <script>
+    const tbody = document.querySelector("#dataTable tbody");
+    const NS = "http://www.w3.org/2000/svg";
 
-  <script src="script.js"></script>
+    const starterData = [
+      { label: "Technical Expertise in Role", self: "", avg: 6.9, min: 6, max: 10, nr: 1 },
+      { label: "Strategic Capabilities", self: 3, avg: 6.4, min: 7, max: 10, nr: 2 },
+      { label: "Decision-Making Abilities", self: "", avg: 6.7, min: 7, max: 10, nr: 3 },
+      { label: "Innovation", self: 6, avg: 6.0, min: 6, max: 10, nr: 4 },
+      { label: "Level of Executive Presence", self: "", avg: 6.6, min: 5, max: 10, nr: 5 },
+      { label: "Ability to Execute", self: 6, avg: 6.2, min: 5, max: 9, nr: 1 },
+      { label: "Delegation", self: "", avg: 6.5, min: 5, max: 10, nr: 2 }
+    ];
+
+    function addRow(values = {}) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text" placeholder="Category" value="${escapeHtml(values.label ?? "")}"></td>
+        <td><input type="number" min="0" max="10" step="0.1" value="${values.self ?? ""}"></td>
+        <td><input type="number" min="0" max="10" step="0.1" value="${values.avg ?? ""}"></td>
+        <td><input type="number" min="0" max="10" step="0.1" value="${values.min ?? ""}"></td>
+        <td><input type="number" min="0" max="10" step="0.1" value="${values.max ?? ""}"></td>
+        <td><input type="number" min="0" step="1" value="${values.nr ?? ""}"></td>
+        <td><button type="button" class="delete-btn" onclick="deleteRow(this)">Delete</button></td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    function deleteRow(button) {
+      button.closest("tr").remove();
+      generateChart();
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function parseNumber(value) {
+      if (value === "" || value === null || value === undefined) return null;
+      const num = parseFloat(value);
+      return Number.isNaN(num) ? null : num;
+    }
+
+    function getData() {
+      const rows = document.querySelectorAll("#dataTable tbody tr");
+
+      return Array.from(rows)
+        .map((row) => {
+          const inputs = row.querySelectorAll("input");
+          const label = inputs[0].value.trim();
+
+          const self = parseNumber(inputs[1].value);
+          const avg = parseNumber(inputs[2].value);
+          const min = parseNumber(inputs[3].value);
+          const max = parseNumber(inputs[4].value);
+          const nr = parseNumber(inputs[5].value);
+
+          return { label, self, avg, min, max, nr };
+        })
+        .filter((item) => item.label !== "");
+    }
+
+    function addSvgEl(name, attrs = {}, text = "") {
+      const el = document.createElementNS(NS, name);
+      for (const [key, value] of Object.entries(attrs)) {
+        el.setAttribute(key, value);
+      }
+      if (text) el.textContent = text;
+      return el;
+    }
+
+    function formatDelta(self, avg) {
+      if (self === null || avg === null) return "—";
+      const delta = self - avg;
+      const rounded = Math.round(delta * 10) / 10;
+      if (rounded > 0) return `+${rounded.toFixed(1)}`;
+      if (rounded < 0) return `${rounded.toFixed(1)}`;
+      return "0.0";
+    }
+
+    function deltaClass(self, avg) {
+      if (self === null || avg === null) return "";
+      const delta = self - avg;
+      if (delta > 0) return "delta-positive";
+      if (delta < 0) return "delta-negative";
+      return "delta-neutral";
+    }
+
+    function generateChart() {
+      const rawData = getData();
+
+      const data = rawData
+        .map((item) => {
+          let min = item.min;
+          let max = item.max;
+
+          if (min !== null && max !== null && min > max) {
+            [min, max] = [max, min];
+          }
+
+          return { ...item, min, max };
+        })
+        .sort((a, b) => {
+          const aAvg = a.avg === null ? -Infinity : a.avg;
+          const bAvg = b.avg === null ? -Infinity : b.avg;
+          return bAvg - aAvg;
+        });
+
+      const svg = document.getElementById("chart");
+      svg.innerHTML = "";
+
+      const width = 1400;
+      const margin = { top: 30, right: 210, bottom: 50, left: 360 };
+      const rowHeight = 42;
+      const plotHeight = Math.max(data.length * rowHeight, 120);
+      const height = margin.top + plotHeight + margin.bottom;
+      const plotWidth = 560;
+      const chartLeft = margin.left;
+      const chartRight = chartLeft + plotWidth;
+
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.setAttribute("height", height);
+
+      function xScale(value) {
+        return chartLeft + (value / 10) * plotWidth;
+      }
+
+      for (let i = 0; i <= 10; i++) {
+        const x = xScale(i);
+        svg.appendChild(addSvgEl("line", {
+          x1: x,
+          y1: margin.top - 10,
+          x2: x,
+          y2: margin.top + plotHeight,
+          class: "grid-line"
+        }));
+
+        svg.appendChild(addSvgEl("text", {
+          x,
+          y: margin.top + plotHeight + 24,
+          "text-anchor": "middle",
+          class: "axis-label"
+        }, String(i)));
+      }
+
+      data.forEach((d, index) => {
+        const y = margin.top + index * rowHeight + rowHeight / 2;
+
+        svg.appendChild(addSvgEl("text", {
+          x: chartLeft - 14,
+          y: y + 5,
+          "text-anchor": "end",
+          class: "row-label"
+        }, d.label));
+
+        if (d.min !== null && d.max !== null) {
+          svg.appendChild(addSvgEl("rect", {
+            x: xScale(d.min),
+            y: y - 8,
+            width: Math.max(xScale(d.max) - xScale(d.min), 0),
+            height: 16,
+            rx: 0,
+            class: "range-bar"
+          }));
+        }
+
+        if (d.avg !== null) {
+          const avgX = xScale(d.avg);
+          svg.appendChild(addSvgEl("circle", {
+            cx: avgX,
+            cy: y,
+            r: 4.5,
+            class: "avg-dot"
+          }));
+
+          svg.appendChild(addSvgEl("text", {
+            x: avgX,
+            y: y - 11,
+            "text-anchor": "middle",
+            class: "avg-label"
+          }, d.avg.toFixed(1)));
+        }
+
+        if (d.self !== null) {
+          const selfX = xScale(d.self);
+          svg.appendChild(addSvgEl("circle", {
+            cx: selfX,
+            cy: y,
+            r: 4.5,
+            class: "self-dot"
+          }));
+
+          svg.appendChild(addSvgEl("text", {
+            x: selfX,
+            y: y + 20,
+            "text-anchor": "middle",
+            class: "self-label"
+          }, Number.isInteger(d.self) ? String(d.self) : d.self.toFixed(1)));
+        }
+
+        svg.appendChild(addSvgEl("text", {
+          x: chartRight + 36,
+          y: y + 5,
+          class: "nr-label"
+        }, `N/R: ${d.nr ?? 0}`));
+
+        const deltaText = formatDelta(d.self, d.avg);
+        svg.appendChild(addSvgEl("text", {
+          x: chartRight + 120,
+          y: y + 5,
+          class: `delta-label ${deltaClass(d.self, d.avg)}`
+        }, `Δ: ${deltaText}`));
+      });
+    }
+
+    starterData.forEach(addRow);
+    generateChart();
+  </script>
+</body>
+</html>
 
 </body>
 </html>
