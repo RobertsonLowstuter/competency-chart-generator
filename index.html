@@ -10,6 +10,7 @@
       --avg: #1f4e79;
       --range: #cfe8f3;
       --grid: #d7d7d7;
+      --baseline: #eeeeee;
       --text: #333;
       --muted: #666;
       --border: #cfcfcf;
@@ -123,8 +124,8 @@
     }
 
     .dot {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
       display: inline-block;
     }
@@ -138,8 +139,8 @@
     }
 
     .range-box {
-      width: 22px;
-      height: 10px;
+      width: 24px;
+      height: 12px;
       background: var(--range);
       display: inline-block;
     }
@@ -154,13 +155,17 @@
 
     #chart {
       width: 100%;
-      min-width: 1320px;
+      min-width: 1360px;
       display: block;
     }
 
     .grid-line {
       stroke: var(--grid);
       stroke-width: 1;
+    }
+
+    .baseline-bar {
+      fill: var(--baseline);
     }
 
     .axis-label {
@@ -187,13 +192,13 @@
 
     .self-label {
       fill: var(--self);
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
     }
 
     .avg-label {
       fill: var(--avg);
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
     }
 
@@ -203,18 +208,7 @@
       fill: #333;
     }
 
-    .delta-positive {
-      fill: var(--self);
-      font-weight: 700;
-    }
-
-    .delta-negative {
-      fill: var(--avg);
-      font-weight: 700;
-    }
-
-    .delta-neutral {
-      fill: #444;
+    .delta-value {
       font-weight: 700;
     }
   </style>
@@ -328,25 +322,19 @@
       for (const [key, value] of Object.entries(attrs)) {
         el.setAttribute(key, value);
       }
-      if (text) el.textContent = text;
+      if (text !== "") el.textContent = text;
       return el;
     }
 
     function formatDelta(self, avg) {
       if (self === null || avg === null) return "—";
-      const delta = self - avg;
-      const rounded = Math.round(delta * 10) / 10;
-      if (rounded > 0) return `+${rounded.toFixed(1)}`;
-      if (rounded < 0) return `${rounded.toFixed(1)}`;
-      return "0.0";
+      const delta = Math.abs(self - avg);
+      return (Math.round(delta * 10) / 10).toFixed(1);
     }
 
-    function deltaClass(self, avg) {
-      if (self === null || avg === null) return "";
-      const delta = self - avg;
-      if (delta > 0) return "delta-positive";
-      if (delta < 0) return "delta-negative";
-      return "delta-neutral";
+    function formatValue(value) {
+      if (value === null) return "";
+      return Number.isInteger(value) ? String(value) : value.toFixed(1);
     }
 
     function generateChart() {
@@ -372,12 +360,12 @@
       const svg = document.getElementById("chart");
       svg.innerHTML = "";
 
-      const width = 1400;
-      const margin = { top: 30, right: 210, bottom: 50, left: 360 };
-      const rowHeight = 42;
+      const width = 1420;
+      const margin = { top: 30, right: 220, bottom: 50, left: 360 };
+      const rowHeight = 44;
       const plotHeight = Math.max(data.length * rowHeight, 120);
       const height = margin.top + plotHeight + margin.bottom;
-      const plotWidth = 560;
+      const plotWidth = 580;
       const chartLeft = margin.left;
       const chartRight = chartLeft + plotWidth;
 
@@ -390,6 +378,7 @@
 
       for (let i = 0; i <= 10; i++) {
         const x = xScale(i);
+
         svg.appendChild(addSvgEl("line", {
           x1: x,
           y1: margin.top - 10,
@@ -416,12 +405,21 @@
           class: "row-label"
         }, d.label));
 
+        svg.appendChild(addSvgEl("rect", {
+          x: chartLeft,
+          y: y - 10,
+          width: plotWidth,
+          height: 20,
+          rx: 0,
+          class: "baseline-bar"
+        }));
+
         if (d.min !== null && d.max !== null) {
           svg.appendChild(addSvgEl("rect", {
             x: xScale(d.min),
-            y: y - 8,
+            y: y - 10,
             width: Math.max(xScale(d.max) - xScale(d.min), 0),
-            height: 16,
+            height: 20,
             rx: 0,
             class: "range-bar"
           }));
@@ -429,36 +427,38 @@
 
         if (d.avg !== null) {
           const avgX = xScale(d.avg);
+
           svg.appendChild(addSvgEl("circle", {
             cx: avgX,
             cy: y,
-            r: 4.5,
+            r: 6.5,
             class: "avg-dot"
           }));
 
           svg.appendChild(addSvgEl("text", {
             x: avgX,
-            y: y - 11,
+            y: y - 14,
             "text-anchor": "middle",
             class: "avg-label"
-          }, d.avg.toFixed(1)));
+          }, formatValue(d.avg)));
         }
 
         if (d.self !== null) {
           const selfX = xScale(d.self);
+
           svg.appendChild(addSvgEl("circle", {
             cx: selfX,
             cy: y,
-            r: 4.5,
+            r: 6.5,
             class: "self-dot"
           }));
 
           svg.appendChild(addSvgEl("text", {
             x: selfX,
-            y: y + 20,
+            y: y + 24,
             "text-anchor": "middle",
             class: "self-label"
-          }, Number.isInteger(d.self) ? String(d.self) : d.self.toFixed(1)));
+          }, formatValue(d.self)));
         }
 
         svg.appendChild(addSvgEl("text", {
@@ -467,20 +467,16 @@
           class: "nr-label"
         }, `N/R: ${d.nr ?? 0}`));
 
-        const deltaText = formatDelta(d.self, d.avg);
         svg.appendChild(addSvgEl("text", {
-          x: chartRight + 120,
+          x: chartRight + 122,
           y: y + 5,
-          class: `delta-label ${deltaClass(d.self, d.avg)}`
-        }, `Δ: ${deltaText}`));
+          class: "delta-label delta-value"
+        }, `Δ: ${formatDelta(d.self, d.avg)}`));
       });
     }
 
     starterData.forEach(addRow);
     generateChart();
   </script>
-</body>
-</html>
-
 </body>
 </html>
