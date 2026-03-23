@@ -17,9 +17,7 @@
       --panel: #f8f8f8;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -29,7 +27,7 @@
     }
 
     .page {
-      max-width: 1380px;
+      max-width: 1560px;
       margin: 0 auto;
       padding: 24px 28px 40px;
     }
@@ -61,13 +59,9 @@
       font-size: 14px;
     }
 
-    button:hover {
-      background: #e9e9e9;
-    }
+    button:hover { background: #e9e9e9; }
 
-    .clear-btn {
-      background: #fafafa;
-    }
+    .clear-btn { background: #fafafa; }
 
     .table-wrap {
       overflow-x: auto;
@@ -134,13 +128,8 @@
       display: inline-block;
     }
 
-    .dot.self {
-      background: var(--self);
-    }
-
-    .dot.avg {
-      background: var(--avg);
-    }
+    .dot.self { background: var(--self); }
+    .dot.avg { background: var(--avg); }
 
     .range-box {
       width: 24px;
@@ -175,7 +164,7 @@
 
     #chart {
       width: 100%;
-      min-width: 1260px;
+      min-width: 1420px;
       display: block;
     }
 
@@ -184,41 +173,22 @@
       stroke-width: 1;
     }
 
-    .baseline-bar {
-      fill: var(--baseline);
-    }
-
-    .axis-label {
-      font-size: 12px;
-      fill: #666;
-    }
-
-    .row-label {
-      font-size: 14px;
-      fill: #444;
-    }
-
-    .range-bar {
-      fill: var(--range);
-    }
-
-    .self-dot {
-      fill: var(--self);
-    }
-
-    .avg-dot {
-      fill: var(--avg);
-    }
+    .baseline-bar { fill: var(--baseline); }
+    .axis-label { font-size: 12px; fill: #666; }
+    .row-label { font-size: 14px; fill: #444; }
+    .range-bar { fill: var(--range); }
+    .self-dot { fill: var(--self); }
+    .avg-dot { fill: var(--avg); }
 
     .self-label {
       fill: var(--self);
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
     }
 
     .avg-label {
       fill: var(--avg);
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
     }
 
@@ -228,9 +198,7 @@
       fill: #333;
     }
 
-    .delta-value {
-      font-weight: 700;
-    }
+    .delta-value { font-weight: 700; }
 
     .column-header {
       font-size: 12px;
@@ -293,7 +261,7 @@
       { label: "Strategic Capabilities", self: 3, avg: 6.4, min: 7, max: 10, nr: 2 },
       { label: "Decision-Making Abilities", self: "", avg: 6.7, min: 7, max: 10, nr: 3 },
       { label: "Innovation", self: 6, avg: 6.0, min: 6, max: 10, nr: 4 },
-      { label: "Level of Executive Presence", self: "", avg: 6.6, min: 5, max: 10, nr: 5 },
+      { label: "Level of Executive Presence", self: 6.6, avg: 6.6, min: 5, max: 10, nr: 5 },
       { label: "Ability to Execute", self: 6, avg: 6.2, min: 5, max: 9, nr: 1 },
       { label: "Delegation", self: "", avg: 6.5, min: 5, max: 10, nr: 2 }
     ];
@@ -384,6 +352,22 @@
       }, "No chart data yet. Add rows or paste values, then click Generate Chart."));
     }
 
+    function resolvePositions(selfValue, avgValue, xScale) {
+      const selfExists = selfValue !== null;
+      const avgExists = avgValue !== null;
+
+      const result = {
+        selfX: selfExists ? xScale(selfValue) : null,
+        avgX: avgExists ? xScale(avgValue) : null,
+        selfDotY: 0,
+        avgDotY: 0,
+        selfLabelY: 0,
+        avgLabelY: 0
+      };
+
+      return result;
+    }
+
     function generateChart() {
       const rawData = getData();
 
@@ -407,12 +391,13 @@
       const svg = document.getElementById("chart");
       svg.innerHTML = "";
 
-      const width = 1320;
+      const width = 1480;
       const margin = { top: 48, right: 150, bottom: 50, left: 360 };
-      const rowHeight = 44;
-      const plotHeight = Math.max(data.length * rowHeight, 120);
+      const rowHeight = 54;
+      const plotHeight = Math.max(data.length * rowHeight, 140);
       const height = margin.top + plotHeight + margin.bottom;
-      const plotWidth = 540;
+
+      const plotWidth = 700;
       const chartLeft = margin.left;
       const chartRight = chartLeft + plotWidth;
 
@@ -461,7 +446,7 @@
         y: margin.top - 18,
         class: "column-header"
       }, "Δ"));
-
+      
       data.forEach((d, index) => {
         const y = margin.top + index * rowHeight + rowHeight / 2;
 
@@ -498,36 +483,51 @@
         let selfX = selfExists ? xScale(d.self) : null;
         let avgX = avgExists ? xScale(d.avg) : null;
 
-        let selfY = y;
-        let avgY = y;
+        let selfDotY = y + 8;
+        let avgDotY = y - 8;
 
-        let selfLabelY = y + 24;
-        let avgLabelY = y - 14;
+        let selfLabelY = y + 30;
+        let avgLabelY = y - 20;
+
+        if (selfExists && !avgExists) {
+          selfDotY = y;
+          selfLabelY = y + 24;
+        }
+
+        if (!selfExists && avgExists) {
+          avgDotY = y;
+          avgLabelY = y - 14;
+        }
 
         if (selfExists && avgExists) {
           const gap = Math.abs(selfX - avgX);
 
-          if (gap < 14) {
-            selfY = y + 6;
-            avgY = y - 6;
+          if (gap < 40) {
+            const push = (40 - gap) / 2 + 2;
+            if (selfX >= avgX) {
+              selfX += push;
+              avgX -= push;
+            } else {
+              selfX -= push;
+              avgX += push;
+            }
           }
 
-          if (gap < 26) {
-            selfLabelY = y + 28;
-            avgLabelY = y - 18;
+          if (Math.abs(selfX - avgX) < 24) {
+            const extra = (24 - Math.abs(selfX - avgX)) / 2 + 2;
+            selfX += selfX >= avgX ? extra : -extra;
+            avgX += avgX > selfX ? extra : -extra;
           }
 
-          if (gap < 8) {
-            selfX = selfX + 5;
-            avgX = avgX - 5;
-          }
+          selfX = Math.max(chartLeft + 8, Math.min(chartRight - 8, selfX));
+          avgX = Math.max(chartLeft + 8, Math.min(chartRight - 8, avgX));
         }
 
         if (avgExists) {
           svg.appendChild(addSvgEl("circle", {
             cx: avgX,
-            cy: avgY,
-            r: 6.5,
+            cy: avgDotY,
+            r: 7,
             class: "avg-dot"
           }));
 
@@ -542,8 +542,8 @@
         if (selfExists) {
           svg.appendChild(addSvgEl("circle", {
             cx: selfX,
-            cy: selfY,
-            r: 6.5,
+            cy: selfDotY,
+            r: 7,
             class: "self-dot"
           }));
 
