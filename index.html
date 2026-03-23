@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Competency Chart Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <h1>Competency Chart Generator</h1>
+
+  <p>N/R: Number of interviewees who did not respond.</p>
+
+  <div class="controls">
+    <button onclick="addRow()">Add Row</button>
+    <button onclick="generateChart()">Generate Chart</button>
+  </div>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Self</th>
+        <th>Average</th>
+        <th>Min</th>
+        <th>Max</th>
+        <th>N/R</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <svg id="chart"></svg>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
