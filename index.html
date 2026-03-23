@@ -65,6 +65,10 @@
       background: #e9e9e9;
     }
 
+    .clear-btn {
+      background: #fafafa;
+    }
+
     .table-wrap {
       overflow-x: auto;
       margin-bottom: 24px;
@@ -233,6 +237,11 @@
       font-weight: 700;
       fill: #555;
     }
+
+    .empty-state {
+      font-size: 16px;
+      fill: #888;
+    }
   </style>
 </head>
 <body>
@@ -243,6 +252,7 @@
     <section class="controls">
       <button type="button" onclick="addRow()">Add Row</button>
       <button type="button" onclick="generateChart()">Generate Chart</button>
+      <button type="button" class="clear-btn" onclick="clearChartData()">Clear Chart</button>
     </section>
 
     <section class="table-wrap">
@@ -307,6 +317,11 @@
       generateChart();
     }
 
+    function clearChartData() {
+      tbody.innerHTML = "";
+      generateChart();
+    }
+
     function escapeHtml(str) {
       return String(str)
         .replaceAll("&", "&amp;")
@@ -360,6 +375,15 @@
       return Number.isInteger(value) ? String(value) : value.toFixed(1);
     }
 
+    function drawEmptyState(svg, width, height) {
+      svg.appendChild(addSvgEl("text", {
+        x: width / 2,
+        y: height / 2,
+        "text-anchor": "middle",
+        class: "empty-state"
+      }, "No chart data yet. Add rows or paste values, then click Generate Chart."));
+    }
+
     function generateChart() {
       const rawData = getData();
 
@@ -397,6 +421,11 @@
 
       svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
       svg.setAttribute("height", height);
+
+      if (data.length === 0) {
+        drawEmptyState(svg, width, height);
+        return;
+      }
 
       function xScale(value) {
         return chartLeft + (value / 10) * plotWidth;
@@ -463,37 +492,64 @@
           }));
         }
 
-        if (d.avg !== null) {
-          const avgX = xScale(d.avg);
+        const selfExists = d.self !== null;
+        const avgExists = d.avg !== null;
 
+        let selfX = selfExists ? xScale(d.self) : null;
+        let avgX = avgExists ? xScale(d.avg) : null;
+
+        let selfY = y;
+        let avgY = y;
+
+        let selfLabelY = y + 24;
+        let avgLabelY = y - 14;
+
+        if (selfExists && avgExists) {
+          const gap = Math.abs(selfX - avgX);
+
+          if (gap < 14) {
+            selfY = y + 6;
+            avgY = y - 6;
+          }
+
+          if (gap < 26) {
+            selfLabelY = y + 28;
+            avgLabelY = y - 18;
+          }
+
+          if (gap < 8) {
+            selfX = selfX + 5;
+            avgX = avgX - 5;
+          }
+        }
+
+        if (avgExists) {
           svg.appendChild(addSvgEl("circle", {
             cx: avgX,
-            cy: y,
+            cy: avgY,
             r: 6.5,
             class: "avg-dot"
           }));
 
           svg.appendChild(addSvgEl("text", {
             x: avgX,
-            y: y - 14,
+            y: avgLabelY,
             "text-anchor": "middle",
             class: "avg-label"
           }, formatValue(d.avg)));
         }
 
-        if (d.self !== null) {
-          const selfX = xScale(d.self);
-
+        if (selfExists) {
           svg.appendChild(addSvgEl("circle", {
             cx: selfX,
-            cy: y,
+            cy: selfY,
             r: 6.5,
             class: "self-dot"
           }));
 
           svg.appendChild(addSvgEl("text", {
             x: selfX,
-            y: y + 24,
+            y: selfLabelY,
             "text-anchor": "middle",
             class: "self-label"
           }, formatValue(d.self)));
