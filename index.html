@@ -180,6 +180,7 @@
     }
 
     .baseline-bar { fill: var(--baseline); }
+
     .axis-label {
       font-size: 12px;
       fill: #666;
@@ -256,7 +257,15 @@
     <section class="controls">
       <button type="button" onclick="addRow()">Add Row</button>
       <button type="button" onclick="generateChart()">Generate Chart</button>
+      <button type="button" onclick="document.getElementById('fileUpload').click()">Upload File</button>
       <button type="button" class="clear-btn" onclick="clearChartData()">Clear Chart</button>
+      <input
+        type="file"
+        id="fileUpload"
+        accept=".csv,.tsv,.txt"
+        style="display:none"
+        onchange="handleDataUpload(event)"
+      />
     </section>
 
     <section class="table-wrap">
@@ -385,7 +394,120 @@
         y: height / 2,
         "text-anchor": "middle",
         class: "empty-state"
-      }, "No chart data yet. Add rows or paste values, then click Generate Chart."));
+      }, "No chart data yet. Add rows or upload a file, then click Generate Chart."));
+    }
+
+    function parseDelimitedLine(line, delimiter) {
+      const result = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === delimiter && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+
+      result.push(current.trim());
+      return result;
+    }
+
+    function detectDelimiter(text) {
+      const firstLine = text.split(/\r?\n/).find(line => line.trim() !== "") || "";
+      const commaCount = (firstLine.match(/,/g) || []).length;
+      const tabCount = (firstLine.match(/\t/g) || []).length;
+      return tabCount > commaCount ? "\t" : ",";
+    }
+
+    function normalizeHeader(header) {
+      return header.trim().toLowerCase().replaceAll("/", "").replace(/\s+/g, "");
+    }
+
+    function parseUploadFile(text) {
+      const delimiter = detectDelimiter(text);
+
+      const lines = text
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== "");
+
+      if (lines.length < 2) {
+        throw new Error("The file is empty or has no data rows.");
+      }
+
+      const rawHeaders = parseDelimitedLine(lines[0], delimiter);
+      const headers = rawHeaders.map(normalizeHeader);
+
+      const headerMap = {
+        name: "label",
+        average: "avg",
+        self: "self",
+        low: "min",
+        high: "max",
+        nr: "nr",
+        range: "range"
+      };
+
+      const required = ["name", "average", "self", "low", "high", "nr"];
+      for (const req of required) {
+        if (!headers.includes(req)) {
+          throw new Error(`Missing required column: ${req}`);
+        }
+      }
+
+      return lines.slice(1).map(line => {
+        const values = parseDelimitedLine(line, delimiter);
+        const row = {};
+
+        headers.forEach((header, index) => {
+          row[headerMap[header] || header] = values[index] ?? "";
+        });
+
+        return {
+          label: row.label || "",
+          avg: row.avg || "",
+          self: row.self || "",
+          min: row.min || "",
+          max: row.max || "",
+          nr: row.nr || ""
+        };
+      }).filter(row => row.label !== "");
+    }
+
+    function handleDataUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const rows = parseUploadFile(text);
+
+          tbody.innerHTML = "";
+          rows.forEach(row => addRow(row));
+          generateChart();
+
+          event.target.value = "";
+        } catch (error) {
+          alert("Could not read file: " + error.message);
+        }
+      };
+
+      reader.readAsText(file);
     }
 
     function generateChart() {
